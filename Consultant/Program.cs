@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using System.Runtime.CompilerServices;
 using Text = DocumentFormat.OpenXml.Wordprocessing.Text;
 
 namespace Consultant
@@ -12,16 +13,23 @@ namespace Consultant
         {
 
             Console.WriteLine("Hello, World! hhh");
-            SaveWordProcessingDocument();
-        }
-        public static void SaveWordProcessingDocument()
-        {
-            string[] mybookmark = 
+            string filePath = "C:\\Users\\mmdr.sasani\\source\\repos\\LetterTemplate\\Consultant\\content\\test1.docx";
+            List<string> values = new List<string>() 
             {
-                "From" ,"To","Content"
+               "محمدرضا ساسانی","حمیدرضا تقوی","شاید زندگی پیدا کردن بخش هایی از خودمان در تکه تکه هایی از یک کل منسجم است" +
+               "\n" +
+               "پیدا کردنی که به اندازه یک عمر طول میکشد" +
+               "و تکه هایی که همه جا حضور دارند و فقط کافی است ما در مسیرشان قرار بگیریم ، آن وقت اگر هوشیار باشیم." +
+               "شاید بخش هایی از خودمان را ببینیم. بخش هایی از خودمان را در رابطه ها و در آدم هایی که تجربه می کنیم"," i"
             };
+            var Result = GetBookmarksFromDoc(filePath);
+            Console.WriteLine(Result);
+            SaveWordProcessingDocument(filePath, Result , values);
+        }
+        public static void SaveWordProcessingDocument(string filePath ,List<string> Result , List<string> value)
+        {
 
-            byte[] byteArray = File.ReadAllBytes("C:\\Users\\mmdr.sasani\\source\\repos\\LetterTemplate\\Consultant\\content\\test1.docx");
+            byte[] byteArray = File.ReadAllBytes(filePath);
             using (var stream = new MemoryStream())
             {
                 stream.Write(byteArray, 0, byteArray.Length);
@@ -48,46 +56,20 @@ namespace Consultant
                             foreach (BookmarkStart bookmarkStart in bookmarkMap.Values)
                             {
                                 Run bookmarkText = bookmarkStart.NextSibling<Run>();
-
-                                foreach (var mb in mybookmark)
+                                int i =0 ;
+                                foreach (var mb in Result)
                                 {
-                                    if (bookmarkStart.Name == mb)
+                                    
+                                    if (bookmarkStart.Name == mb && bookmarkText != null)
                                     {
+                                        bookmarkText.GetFirstChild<Text>().Text = value[i];
+
                                         Console.WriteLine($"It's correctly : {bookmarkStart.Name}");
 
                                     }
+                                    i++;
 
                                 }
-                                if (bookmarkStart.Name == "From")
-                                {
-                                    Console.WriteLine($"Bookmark From replacement: {bookmarkStart.Name}");
-                                    if (bookmarkText != null)
-                                    {
-                                        bookmarkText.GetFirstChild<Text>().Text = "امیر محمد رضایی";
-                                    }
-                                }
-                                else if (bookmarkStart.Name == "To")
-                                {
-                                    if (bookmarkText != null)
-                                    {
-                                        bookmarkText.GetFirstChild<Text>().Text = "محمدرضا ساسانی";
-                                    }
-                                }
-                                else if (bookmarkStart.Name == "Content")
-                                {
-                                    if (bookmarkText != null)
-                                    {
-                                        bookmarkText.GetFirstChild<Text>().Text = "گوگل و محتوای کپی و تکراری، مثل کارد و پنیرند و به‌هیچ‌وجه آب‌شان به یک جوب نمی‌رود!\r\n\r\nمانند سایر موتورهای جست‌وجو، گوگل هم نمی‌خواهد ۱۰ محتوای یکسان و مشابه را در صفحهٔ نتایج جست‌وجو به کاربر ارائه دهد؛ پس سعی می‌کند محتواهای منحصربه‌فرد را شناسایی کند و به آن‌ها احترام بگذارد.\r\n\r\nوقتی گوگل با چند محتوای کپی مواجه شود، بین آن‌ها گیر می‌کند و نمی‌تواند بفهمد کدام را به کاربر پیشنهاد دهد و اعتبار لینک‌ها و رتبهٔ بهتر را باید به کدام یکی اعطا کند. این اتفاق به‌شدت به رتبه‌بندی سایت شما آسیب می‌زند.\r\n\r\nبرای اینکه پول خودتان را خرج مقالهٔ کپی‌شده نکنید و مخاطبان خود را به‌خاطر آن از دست دهید، بهتر است به سراغ ابزارهای تشخیص محتوای کپی بروید.\r\n\r\nقبل از اینکه ۱۰ ابزار کاربردی و مناسب برای محتواهای فارسی و انگلیسی را به شما معرفی کنیم، بیایید ببینیم اصلاً به چه چیزی محتوای کپی می‌گوییم!";
-                                    }
-                                }
-                                else
-                                {
-                                    if (bookmarkText != null)
-                                    {
-                                        bookmarkText.GetFirstChild<Text>().Text =" ";
-                                    }
-                                }
-
                             }
                         }
                     }
@@ -102,6 +84,41 @@ namespace Consultant
             }
         }
         //------------------------------------------------------------------------
+        public static List<string> GetBookmarksFromDoc(string filePath)
+        {
+            List<string> BookmarkAchive = new List<string>();
+            try
+            {
+                using var wordDoc = WordprocessingDocument.Open(filePath, false);
+                var mainPart = wordDoc.MainDocumentPart;
+                if (mainPart != null)
+                {
+                    var bookmarks = mainPart.Document.Body.Descendants<BookmarkStart>();
+                    if (!bookmarks.Any())
+                    {
+                        Console.WriteLine("No bookmarks found in the document.");
+                    }
+                    else
+                    {
+                        foreach (var bookmarkStart in bookmarks)
+                        {
+                            BookmarkAchive.Add(bookmarkStart.Name);
+                            Console.WriteLine($"Bookmark Name: {bookmarkStart.Name}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No bookmarks found in the document.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+            return BookmarkAchive;
+        }
+
         //----------------------------------------------------------------------
         public static void GetBookmarksFromDocx(string filePath)
         {
